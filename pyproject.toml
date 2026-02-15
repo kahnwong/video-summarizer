@@ -16,7 +16,7 @@ dependencies = [
     "pyannote-audio>=3.4.0",
     "pydub>=0.25.1",
     "speechbrain>=1.0.3",
-    "torch==2.4.1",
+    "torch==2.8.0",
 ]
 
 [tool.uv]
