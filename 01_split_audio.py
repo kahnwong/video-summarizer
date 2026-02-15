@@ -50,7 +50,6 @@ def split_by_silence(
     segments = []
     start = 0
 
-    print("# Split by silence")
     for end in tqdm(split_points):
         if end - start > 1000:  # ignore segments < 1 sec
             segments.append(audio[start:end])
