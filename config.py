@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-audio_chunks_dir = "data/temp/audio_chunks"
+audio_chunks_dir = "data/temp/audio_chunks_master"
 
 split_audio = SimpleNamespace(
     INPUT_FILE="data/source/audio.wav",
@@ -11,8 +11,8 @@ split_audio = SimpleNamespace(
 )
 
 asr = SimpleNamespace(
-    ASR_MODEL_NAME="scb10x/typhoon-asr-realtime",
     DIAR_MODEL_NAME="pyannote/speaker-diarization-community-1",
+    ASR_MODEL_NAME="scb10x/typhoon-asr-realtime",
     SPEAKER_EMBEDDING_MODEL_NAME="speechbrain/spkrec-ecapa-voxceleb",
     AUDIO_DIR=audio_chunks_dir,
     SIM_THRESHOLD=0.75,  # higher = stricter matching
