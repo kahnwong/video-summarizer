@@ -1,14 +1,3 @@
-# /// script
-# requires-python = "==3.13"
-# dependencies = [
-#  "audioop-lts>=0.2.2",
-#  "loguru>=0.7.3",
-#  "pydub>=0.25.1",
-#  "tqdm>=4.67.3",
-# ]
-# ///
-
-
 import math
 import os
 from typing import List
@@ -50,7 +39,6 @@ def split_by_silence(
     segments = []
     start = 0
 
-    print("# Split by silence")
     for end in tqdm(split_points):
         if end - start > 1000:  # ignore segments < 1 sec
             segments.append(audio[start:end])
