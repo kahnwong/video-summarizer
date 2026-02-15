@@ -96,16 +96,16 @@ def pipeline():
     for file in audio_files:
         log.info(f"Processing: {file}")
 
-        wav, sr = load_audio(file)
+        wav, sample_rate = load_audio(file)
 
         diar_output = diar_pipeline(
-            {"waveform": torch.tensor(wav).unsqueeze(0), "sample_rate": sr}
+            {"waveform": torch.tensor(wav).unsqueeze(0), "sample_rate": sample_rate}
         )
 
         for turn, speaker in diar_output.speaker_diarization:
             try:
                 # ----- match speaker id -----
-                seg_wav = wav[int(turn.start * sr) : int(turn.end * sr)]
+                seg_wav = wav[int(turn.start * sample_rate) : int(turn.end * sample_rate)]
                 emb = get_embedding(seg_wav)
 
                 match_id = match_speaker(GLOBAL_SPK_DB, emb)
@@ -120,7 +120,7 @@ def pipeline():
                     GLOBAL_SPK_DB[match_id].append(emb)
                     log.info(f"    Matched with existing global speaker: {match_id}")
 
-                sf.write(asr.TEMP_FILE, seg_wav, sr)
+                sf.write(asr.TEMP_FILE, seg_wav, sample_rate)
 
                 # ----- append output -----
                 try:
@@ -164,7 +164,7 @@ def pipeline():
                 log.error(f"    Error processing segment: {e}")
                 continue
 
-        abs_time += len(wav) / sr
+        abs_time += len(wav) / sample_rate
 
     return output
 
