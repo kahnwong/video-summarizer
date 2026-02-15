@@ -6,15 +6,10 @@ from loguru import logger as log
 from pydub import AudioSegment, silence
 from tqdm import tqdm
 
-# ----- config -----
-INPUT_FILE = "data/source/audio.wav"
-OUTPUT_DIR = "data/temp/audio_chunks"
-MIN_SILENCE_LEN = 1500  # 1.5s
-SILENCE_THRESH = -60  # dBFS
-MAX_CHUNK_MS = 10 * 60 * 1000  # 5 minutes
+from config import split_audio
 
 # ----- init -----
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+os.makedirs(split_audio.OUTPUT_DIR, exist_ok=True)
 
 
 # ----- functions -----
@@ -24,8 +19,8 @@ def create_split_points(audio: AudioSegment) -> List[int]:
     # Detect silence ranges
     silences = silence.detect_silence(
         audio,
-        min_silence_len=MIN_SILENCE_LEN,
-        silence_thresh=SILENCE_THRESH,
+        min_silence_len=split_audio.MIN_SILENCE_LEN,
+        silence_thresh=split_audio.SILENCE_THRESH,
         seek_step=10,  # 10ms
     )
 
@@ -59,13 +54,15 @@ def split_chunks(segments: List[AudioSegment]) -> List[AudioSegment]:
     final_chunks = []
 
     for seg in segments:
-        if len(seg) <= MAX_CHUNK_MS:
+        if len(seg) <= split_audio.MAX_CHUNK_MS:
             final_chunks.append(seg)
         else:
             # further subdivide long segments
-            parts = math.ceil(len(seg) / MAX_CHUNK_MS)
+            parts = math.ceil(len(seg) / split_audio.MAX_CHUNK_MS)
             for i in range(parts):
-                sub = seg[i * MAX_CHUNK_MS : (i + 1) * MAX_CHUNK_MS]
+                sub = seg[
+                    i * split_audio.MAX_CHUNK_MS : (i + 1) * split_audio.MAX_CHUNK_MS
+                ]
                 final_chunks.append(sub)
 
     return final_chunks
@@ -75,7 +72,7 @@ def conver_to_mp3(chunks: List[AudioSegment]) -> None:
     log.info("Converting to mp3")
 
     for i, chunk in enumerate(tqdm(chunks)):
-        out_path = os.path.join(OUTPUT_DIR, f"chunk_{i:03d}.mp3")
+        out_path = os.path.join(split_audio.OUTPUT_DIR, f"chunk_{i:03d}.mp3")
         chunk.export(out_path, format="mp3")
 
     log.info(f"Done! Total chunks: {len(chunks)}")
@@ -83,7 +80,7 @@ def conver_to_mp3(chunks: List[AudioSegment]) -> None:
 
 if __name__ == "__main__":
     log.info("Creating audio segments")
-    audio = AudioSegment.from_file(INPUT_FILE)
+    audio = AudioSegment.from_file(split_audio.INPUT_FILE)
 
     split_points = create_split_points(audio)
     segments = split_by_silence(audio, split_points)
