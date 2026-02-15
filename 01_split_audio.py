@@ -1,3 +1,14 @@
+# /// script
+# requires-python = "==3.13"
+# dependencies = [
+#  "audioop-lts>=0.2.2",
+#  "loguru>=0.7.3",
+#  "pydub>=0.25.1",
+#  "tqdm>=4.67.3",
+# ]
+# ///
+
+
 import math
 import os
 from typing import List
