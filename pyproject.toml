@@ -7,7 +7,17 @@ authors = [
 ]
 requires-python = ">=3.13"
 dependencies = [
+    "librosa>=0.11.0",
+    "loguru>=0.7.3",
+    "nemo-toolkit[asr]>=2.6.2",
+    "numpy>=2.3.5",
+    "pyannote-audio>=4.0.4",
+    "pydub>=0.25.1",
+    "speechbrain>=1.0.3",
 ]
 
 [tool.uv]
 package = false
+
+[tool.uv.sources]
+speechbrain = { git = "https://github.com/speechbrain/speechbrain.git", rev = "develop" }
