@@ -73,7 +73,7 @@ def merge_output(results):
     with open(asr.OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
 
-    log.info("Saved:", asr.OUTPUT_FILE)
+    log.info(f"Saved: {asr.OUTPUT_FILE}")
 
 
 # ----- pipeline -----
@@ -124,16 +124,17 @@ def pipeline():
                 texts = asr_model.transcribe(asr.TEMP_FILE, timestamps=True)[0].timestamp[
                     "word"
                 ]
-                for w in texts:
-                    output.append(
-                        {
-                            "speaker": match_id,
-                            "word": w["word"],
-                            "start": float(turn.start) + abs_time + w["start"],
-                            "end": float(turn.end) + abs_time + w["end"],
-                            "audio": file,
-                        }
-                    )
+                print(texts)
+                # for w in texts:
+                #     output.append(
+                #         {
+                #             "speaker": match_id,
+                #             "word": w["word"],
+                #             "start": float(turn.start) + abs_time + w["start"],
+                #             "end": float(turn.end) + abs_time + w["end"],
+                #             "audio": file,
+                #         }
+                #     )
             except Exception as e:
                 log.error("    Error processing segment:", e)
                 continue
