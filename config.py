@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-audio_chunks_dir = "data/temp/audio_chunks_master"
+audio_chunks_dir = "data/temp/audio_chunks"
 
 split_audio = SimpleNamespace(
     INPUT_FILE="data/source/audio.wav",
@@ -16,6 +16,7 @@ asr = SimpleNamespace(
     SPEAKER_EMBEDDING_MODEL_NAME="speechbrain/spkrec-ecapa-voxceleb",
     AUDIO_DIR=audio_chunks_dir,
     SIM_THRESHOLD=0.75,  # higher = stricter matching
+    TEMP_FILE="data/temp/temp.wav",
     OUTPUT_DIR="data/output",
     OUTPUT_FILE="data/output/transcript.json",
 )

@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Dict
 
 import nemo.collections.asr as nemo_asr
 import numpy as np
@@ -39,7 +39,6 @@ def load_audio(path: str) -> tuple[ndarray[tuple[Any, ...], dtype[float64]], int
     return samples, 16000
 
 
-
 def get_embedding(waveform: ndarray[tuple[Any, ...], dtype[float64]]) -> Any:
     """Extract speaker embedding vector."""
     log.info(waveform.shape)
@@ -47,35 +46,31 @@ def get_embedding(waveform: ndarray[tuple[Any, ...], dtype[float64]]) -> Any:
         waveform = torch.tensor(waveform).unsqueeze(0)
 
     return spk_model.encode_batch(waveform.to(device)).detach().cpu().numpy()[0]
-#
-#
-# def cosine(a, b):
-#     return np.dot(a.flatten(), b.flatten()) / (np.linalg.norm(a) * np.linalg.norm(b))
-#
-#
-# def match_speaker(global_db, emb_vec):
-#     """Match embedding to global speakers DB."""
-#     if len(global_db) == 0:
-#         return None
-#
-#     best_id, best_score = None, -1
-#     for spk_id, vecs in global_db.items():
-#         avg_vec = np.mean(vecs, axis=0)
-#         score = cosine(avg_vec, emb_vec)
-#         if score > best_score:
-#             best_id = spk_id
-#             best_score = score
-#
-#     return best_id if best_score >= SIM_THRESHOLD else None
-#
-#
-# # ============================
-# # MAIN PIPELINE
-# # ============================
+
+
+def match_speaker(global_db: Dict[str, Any], emb_vec: Any):
+    def cosine(a, b):
+        return np.dot(a.flatten(), b.flatten()) / (np.linalg.norm(a) * np.linalg.norm(b))
+
+    """Match embedding to global speakers DB."""
+    if len(global_db) == 0:
+        return None
+
+    best_id, best_score = None, -1
+    for spk_id, vecs in global_db.items():
+        avg_vec = np.mean(vecs, axis=0)
+        score = cosine(avg_vec, emb_vec)
+        if score > best_score:
+            best_id = spk_id
+            best_score = score
+
+    return best_id if best_score >= asr.SIM_THRESHOLD else None
+
 
 # ----- pipeline functions -----
 
 
+# ----- pipeline -----
 def pipeline():
     audio_files = sorted(
         [
@@ -95,7 +90,6 @@ def pipeline():
 
         wav, sr = load_audio(file)
 
-        # ---- 1. DIARIZATION ----
         diar_output = diar_pipeline(
             {"waveform": torch.tensor(wav).unsqueeze(0), "sample_rate": sr}
         )
@@ -105,20 +99,20 @@ def pipeline():
                 seg_wav = wav[int(turn.start * sr): int(turn.end * sr)]
                 emb = get_embedding(seg_wav)
 
-                # # ---- 2. GLOBAL SPEAKER MATCHING ----
-                # match_id = match_speaker(GLOBAL_SPK_DB, emb)
-                # print(f"  Local speaker: {spk} --> Global speaker: {match_id}")
-                #
-                # if match_id is None:
-                #     match_id = f"S{global_speaker_count}"
-                #     GLOBAL_SPK_DB.setdefault(match_id, []).append(emb)
-                #     global_speaker_count += 1
-                #     print(f"    New global speaker created: {match_id}")
-                # else:
-                #     GLOBAL_SPK_DB[match_id].append(emb)
-                #     print(f"    Matched with existing global speaker: {match_id}")
-                #
-                # sf.write("tmp.wav", seg_wav, sr)
+                match_id = match_speaker(GLOBAL_SPK_DB, emb)
+                log.info(f"  Local speaker: {speaker} --> Global speaker: {match_id}")
+
+                if match_id is None:
+                    match_id = f"S{global_speaker_count}"
+                    GLOBAL_SPK_DB.setdefault(match_id, []).append(emb)
+                    global_speaker_count += 1
+                    log.info(f"    New global speaker created: {match_id}")
+                else:
+                    GLOBAL_SPK_DB[match_id].append(emb)
+                    log.info(f"    Matched with existing global speaker: {match_id}")
+
+                sf.write(asr.TEMP_FILE, seg_wav, sr)
+
                 # texts = asr_model.transcribe("tmp.wav", timestamps=True)[0].timestamp[
                 #     "word"
                 # ]
