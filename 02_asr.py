@@ -52,7 +52,9 @@ def get_embedding(waveform: ndarray[tuple[Any, ...], dtype[float64]]) -> Any:
 
 def match_speaker(global_db: Dict[str, Any], emb_vec: Any):
     def cosine(a, b):
-        return np.dot(a.flatten(), b.flatten()) / (np.linalg.norm(a) * np.linalg.norm(b))
+        return np.dot(a.flatten(), b.flatten()) / (
+            np.linalg.norm(a) * np.linalg.norm(b)
+        )
 
     """Match embedding to global speakers DB."""
     if len(global_db) == 0:
@@ -103,7 +105,7 @@ def pipeline():
         for turn, speaker in diar_output.speaker_diarization:
             try:
                 # ----- match speaker id -----
-                seg_wav = wav[int(turn.start * sr): int(turn.end * sr)]
+                seg_wav = wav[int(turn.start * sr) : int(turn.end * sr)]
                 emb = get_embedding(seg_wav)
 
                 match_id = match_speaker(GLOBAL_SPK_DB, emb)
@@ -121,22 +123,45 @@ def pipeline():
                 sf.write(asr.TEMP_FILE, seg_wav, sr)
 
                 # ----- append output -----
-                texts = asr_model.transcribe(asr.TEMP_FILE, timestamps=True)[0].timestamp[
-                    "word"
-                ]
-                print(texts)
-                # for w in texts:
-                #     output.append(
-                #         {
-                #             "speaker": match_id,
-                #             "word": w["word"],
-                #             "start": float(turn.start) + abs_time + w["start"],
-                #             "end": float(turn.end) + abs_time + w["end"],
-                #             "audio": file,
-                #         }
-                #     )
+                try:
+                    # Pass audio data directly instead of file path to avoid dataloader issues
+                    transcribe_result = asr_model.transcribe(
+                        audio=asr.TEMP_FILE, batch_size=1, timestamps=True
+                    )
+                    # transcribe_result[0] is list of hypotheses for first file
+                    # transcribe_result[0][0] is the best hypothesis
+                    hypothesis = transcribe_result[0][0]
+                    texts = hypothesis.timestep["word"]
+                    for w in texts:
+                        output.append(
+                            {
+                                "speaker": match_id,
+                                "word": w["word"],
+                                "start": float(turn.start) + abs_time + w["start"],
+                                "end": float(turn.end) + abs_time + w["end"],
+                                "audio": file,
+                            }
+                        )
+                except Exception as e2:
+                    log.error(f"    Transcription error: {type(e2).__name__}: {e2}")
+                    # Skip this segment and continue
+                    continue
+                # transcribe_result[0] is list of hypotheses for first file
+                # transcribe_result[0][0] is the best hypothesis
+                hypothesis = transcribe_result[0][0]
+                texts = hypothesis.timestep["word"]
+                for w in texts:
+                    output.append(
+                        {
+                            "speaker": match_id,
+                            "word": w["word"],
+                            "start": float(turn.start) + abs_time + w["start"],
+                            "end": float(turn.end) + abs_time + w["end"],
+                            "audio": file,
+                        }
+                    )
             except Exception as e:
-                log.error("    Error processing segment:", e)
+                log.error(f"    Error processing segment: {e}")
                 continue
 
         abs_time += len(wav) / sr
