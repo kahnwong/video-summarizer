@@ -1,3 +1,4 @@
+import json
 from typing import Any, Dict
 
 import nemo.collections.asr as nemo_asr
@@ -13,6 +14,7 @@ from config import asr
 import soundfile as sf
 
 # ----- init -----
+os.makedirs(asr.OUTPUT_DIR, exist_ok=True)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 # ----- init models -----
@@ -67,7 +69,11 @@ def match_speaker(global_db: Dict[str, Any], emb_vec: Any):
     return best_id if best_score >= asr.SIM_THRESHOLD else None
 
 
-# ----- pipeline functions -----
+def merge_output(results):
+    with open(asr.OUTPUT_FILE, "w", encoding="utf-8") as f:
+        json.dump(results, f, indent=2, ensure_ascii=False)
+
+    log.info("Saved:", asr.OUTPUT_FILE)
 
 
 # ----- pipeline -----
@@ -83,7 +89,7 @@ def pipeline():
     GLOBAL_SPK_DB = {}  # { "S1": [emb, emb, ...], ... }
     global_speaker_count = 1
     abs_time = 0
-    full_output = []
+    output = []
 
     for file in audio_files:
         log.info(f"Processing: {file}")
@@ -96,6 +102,7 @@ def pipeline():
 
         for turn, speaker in diar_output.speaker_diarization:
             try:
+                # ----- match speaker id -----
                 seg_wav = wav[int(turn.start * sr): int(turn.end * sr)]
                 emb = get_embedding(seg_wav)
 
@@ -113,42 +120,29 @@ def pipeline():
 
                 sf.write(asr.TEMP_FILE, seg_wav, sr)
 
-                # texts = asr_model.transcribe("tmp.wav", timestamps=True)[0].timestamp[
-                #     "word"
-                # ]
-                # for w in texts:
-                #     # print(f"start: {seg['start']}, {w['start']}, end: {seg['end']}, {w['end']}")
-                #     full_output.append(
-                #         {
-                #             "speaker": match_id,
-                #             "word": w["word"],
-                #             "start": float(turn.start) + abs_time + w["start"],
-                #             "end": float(turn.end) + abs_time + w["end"],
-                #             "audio": file,
-                #         }
-                #     )
+                # ----- append output -----
+                texts = asr_model.transcribe(asr.TEMP_FILE, timestamps=True)[0].timestamp[
+                    "word"
+                ]
+                for w in texts:
+                    output.append(
+                        {
+                            "speaker": match_id,
+                            "word": w["word"],
+                            "start": float(turn.start) + abs_time + w["start"],
+                            "end": float(turn.end) + abs_time + w["end"],
+                            "audio": file,
+                        }
+                    )
             except Exception as e:
-                print("    Error processing segment:", e)
+                log.error("    Error processing segment:", e)
                 continue
 
         abs_time += len(wav) / sr
-        print("full_output :", full_output)
 
-    return full_output
+    return output
 
 
-#
-# # ============================
-# # MERGE TO FINAL JSON
-# # ============================
-# def merge_to_json(results):
-#     with open(OUTPUT_JSON, "w", encoding="utf-8") as f:
-#         json.dump(results, f, indent=2, ensure_ascii=False)
-#
-#     print("Saved:", OUTPUT_JSON)
-#
-#
 if __name__ == "__main__":
     result = pipeline()
-#     merge_to_json(result)
-#     print("Done!")
+    merge_output(result)
