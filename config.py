@@ -2,6 +2,7 @@ from types import SimpleNamespace
 
 audio_chunks_dir = "data/temp/audio_chunks"
 transcript_file = "data/output/transcript.json"
+summary_file = "data/output/summary.json"
 
 split_audio = SimpleNamespace(
     INPUT_FILE="data/source/audio.wav",
@@ -24,6 +25,13 @@ summarize = SimpleNamespace(
     TRANSCRIPT_FILE=transcript_file,
     TEMPLATE_FILE="templates/summarize_prompt.jinja2",
     MODEL_NAME="claude-sonnet-4-5",
-    OUTPUT_FILE="data/output/summary.json",
+    OUTPUT_FILE=summary_file,
     MAX_IMAGES=10,
+)
+
+create_markdown = SimpleNamespace(
+    INPUT_FILE=summary_file,
+    FRAMES_DIR="data/output/frames",
+    VIDEO_DIR="data/source",
+    OUTPUT_FILE="data/output/summary-with-images.md",
 )
