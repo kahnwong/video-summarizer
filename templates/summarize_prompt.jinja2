@@ -1,0 +1,30 @@
+You will:
+1. Read the transcript
+2. Select the BEST timestamps where images should be extracted from the video
+   - max {{ max_images }}
+   - choose timestamps that represent KEY MOMENTS:
+       * speaker changes
+       * important content
+       * emotional reactions
+       * slide transitions
+3. Produce a FINAL Markdown summary that includes:
+   - Executive Summary
+   - Speaker highlights
+   - Timeline summary
+   - Markdown placeholders for images like:
+
+        ![Image at {ts}s](frames/frame_{ts}.jpg)
+   - Final Summary
+4. Output JSON ONLY in this schema:
+
+{
+  "summary_md": ".... markdown here ...",
+  "selected_timestamps": [1.23, 5.88, 28.10]
+}
+
+--------------------------
+TRANSCRIPT:
+{{ dialogue }}
+--------------------------
+
+Select timestamps + produce summary now.

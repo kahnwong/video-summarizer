@@ -9,6 +9,8 @@ import torch
 from loguru import logger as log
 from pyannote.audio import Pipeline
 
+from config import asr
+
 # ----- Suppress NeMo warnings -----
 os.environ["NEMO_LOG_LEVEL"] = "ERROR"
 
@@ -41,8 +43,6 @@ import nemo.collections.asr as nemo_asr
 # ----- Python 3.13 compatibility patch for lhotse -----
 # Fix for: TypeError: object.__init__() takes exactly one argument
 from torch.utils.data import Sampler
-
-from config import asr
 
 _original_sampler_init = Sampler.__init__
 
