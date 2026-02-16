@@ -1,4 +1,4 @@
-# Video Summarization
+# Video Summarizer
 
 Refactored version of <https://github.com/ro-witthawin/videoSummarizationWithASRandVisual>.
 

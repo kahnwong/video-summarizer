@@ -25,7 +25,7 @@ def extract_frames(selected_ts) -> List[Any]:
     frames = []
 
     for ts in selected_ts:
-        cap.set(cv2.CAP_PROP_POS_MSEC, ts)
+        cap.set(cv2.CAP_PROP_POS_MSEC, ts * 1000)
         ok, frame = cap.read()
         if ok:
             fpath = f"{create_markdown.FRAMES_DIR}/frame_{int(ts)}.jpg"

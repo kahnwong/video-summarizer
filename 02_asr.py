@@ -86,7 +86,12 @@ def load_models():
 
 
 def process_audio_file(
-    audio_path: str, diarization_pipeline, asr_model, output_file, global_speaker_map
+    audio_path: str,
+    diarization_pipeline,
+    asr_model,
+    output_file,
+    global_speaker_map,
+    chunk_offset_ms: float,
 ):
     """Process a single audio file with diarization and ASR"""
     log.info(f"Processing {audio_path}")
@@ -153,11 +158,12 @@ def process_audio_file(
                 segment_text = ""
 
             # Create result object with global speaker ID
+            # Add chunk offset to get absolute time from full audio source
             result_obj = {
                 "speaker": global_speaker_id,
                 "word": segment_text,
-                "start": turn.start * 1000,
-                "end": turn.end * 1000,
+                "start": turn.start * 1000 + chunk_offset_ms,
+                "end": turn.end * 1000 + chunk_offset_ms,
                 "audio": audio_filename,
             }
 
@@ -181,6 +187,19 @@ def main():
     audio_files = sorted(Path(asr.AUDIO_DIR).glob("*.mp3"))
     log.info(f"Found {len(audio_files)} audio files")
 
+    # Calculate cumulative time offsets for each chunk
+    log.info("Calculating chunk offsets")
+    chunk_offsets = {}
+    cumulative_offset_ms = 0.0
+
+    for audio_file in audio_files:
+        chunk_offsets[str(audio_file)] = cumulative_offset_ms
+        # Get duration of this chunk
+        duration = librosa.get_duration(path=str(audio_file))
+        cumulative_offset_ms += duration * 1000  # Convert to milliseconds
+
+    log.info(f"Total audio duration: {cumulative_offset_ms / 1000 / 60:.2f} minutes")
+
     # Global speaker mapping dictionary
     global_speaker_map = {}
 
@@ -191,8 +210,14 @@ def main():
     with open(asr.OUTPUT_FILE, "w", encoding="utf-8") as f:
         # Process each file
         for audio_file in audio_files:
+            chunk_offset = chunk_offsets[str(audio_file)]
             segment_count = process_audio_file(
-                str(audio_file), diarization_pipeline, asr_model, f, global_speaker_map
+                str(audio_file),
+                diarization_pipeline,
+                asr_model,
+                f,
+                global_speaker_map,
+                chunk_offset,
             )
             total_segments += segment_count
 
