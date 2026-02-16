@@ -85,7 +85,9 @@ def load_models():
     return diarization_pipeline, asr_model
 
 
-def process_audio_file(audio_path: str, diarization_pipeline, asr_model, output_file):
+def process_audio_file(
+    audio_path: str, diarization_pipeline, asr_model, output_file, global_speaker_map
+):
     """Process a single audio file with diarization and ASR"""
     log.info(f"Processing {audio_path}")
 
@@ -107,11 +109,22 @@ def process_audio_file(audio_path: str, diarization_pipeline, asr_model, output_
     audio_filename = os.path.basename(audio_path)
     segment_count = 0
 
+    # Local speaker mapping for this file
+    local_speaker_map = {}
+
     # DiarizeOutput has speaker_diarization attribute which contains the annotation
     if hasattr(diarization_output, "speaker_diarization"):
         annotation = diarization_output.speaker_diarization
 
         for turn, _, speaker_label in annotation.itertracks(yield_label=True):
+            # Map local speaker label to global speaker ID
+            file_speaker_key = f"{audio_filename}_{speaker_label}"
+            if file_speaker_key not in global_speaker_map:
+                global_speaker_map[file_speaker_key] = (
+                    f"SPEAKER_{len(global_speaker_map)}"
+                )
+            global_speaker_id = global_speaker_map[file_speaker_key]
+
             # Extract audio segment for this speaker turn
             start_sample = int(turn.start * sample_rate)
             end_sample = int(turn.end * sample_rate)
@@ -139,9 +152,9 @@ def process_audio_file(audio_path: str, diarization_pipeline, asr_model, output_
             else:
                 segment_text = ""
 
-            # Create result object
+            # Create result object with global speaker ID
             result_obj = {
-                "speaker": speaker_label,
+                "speaker": global_speaker_id,
                 "word": segment_text,
                 "start": turn.start * 1000,
                 "end": turn.end * 1000,
@@ -168,6 +181,9 @@ def main():
     audio_files = sorted(Path(asr.AUDIO_DIR).glob("*.mp3"))
     log.info(f"Found {len(audio_files)} audio files")
 
+    # Global speaker mapping dictionary
+    global_speaker_map = {}
+
     # Open output file and write results incrementally
     log.info(f"Writing results to {asr.OUTPUT_FILE}")
     total_segments = 0
@@ -176,11 +192,12 @@ def main():
         # Process each file
         for audio_file in audio_files:
             segment_count = process_audio_file(
-                str(audio_file), diarization_pipeline, asr_model, f
+                str(audio_file), diarization_pipeline, asr_model, f, global_speaker_map
             )
             total_segments += segment_count
 
     log.info(f"Done! Processed {total_segments} segments")
+    log.info(f"Total unique speakers across all files: {len(global_speaker_map)}")
 
 
 if __name__ == "__main__":
