@@ -19,3 +19,7 @@ ffmpeg -i video.mp4 audio.wav
 ## Usage
 
 Run scripts in ascending order.
+
+## Bugs
+
+For final summarization, sometimes the return timestamp is in `ms`, sometimes `s`.
