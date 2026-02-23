@@ -6,7 +6,7 @@ Refactored version of <https://github.com/ro-witthawin/videoSummarizationWithASR
 
 ```bash
 mkdir -p data/source
-yt-dlp -f 140+137 https://www.youtube.com/watch?v=oTGOpu2eyIc
+yt-dlp -f 140+137 "https://www.youtube.com/watch?v=oTGOpu2eyIc"
 ```
 
 ## Prep
